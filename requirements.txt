@@ -1,0 +1,19 @@
+# Core LLM API Access 
+openai
+# Graph Database Driver 
+neo4j
+# For Word Docs extraction 
+python-docx
+# Environment Variables Management 
+python-dotenv
+# Validation & Schema Management (GraphOps Strategy)
+pydantic
+# Token Counting (For tracking and logging LLM API costs)
+tiktoken
+# Web UI for Testing
+streamlit
+
+
+# --- Backup Orchestration (Optional) ---
+# langgraph
+# graphiti

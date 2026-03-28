@@ -1,0 +1,25 @@
+# Environment & Secrets
+.env
+.venv/
+venv/
+env/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Project Data (Personal documents)
+data/
+
+# Logging Files 
+logs/*
+*.log
+
+# IDE & OS specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+tests/
