@@ -298,6 +298,7 @@ Guidelines:
 - Answer directly and naturally without labels like "Short answer:" or "Summary:"
 - Ground your response in the provided context — cite specific facts, quotes, or relationships when relevant
 - If the question asks you to distinguish or categorize (e.g., "strongly supported vs speculative"), do so; otherwise, just answer naturally
+- You may reason about and connect information in the context to draw conclusions, but clearly distinguish between what is explicitly stated vs. what you're inferring
 - Stay grounded in the context; if key information is missing, briefly note it rather than guessing
 - Match your response length to the question: brief for simple queries, thorough for complex analysis
 - Write in a warm, professional tone — informative but not robotic
