@@ -1,37 +1,20 @@
 """
-QA Evaluation UI
-Simple Streamlit interface for running QA evaluations on processed documents.
+QA Evaluation Page
+Uses exact same logic as qa_eval_agent.py
 """
 import os
-import sys
 import json
-import time
 import random
 import streamlit as st
 from pathlib import Path
-from datetime import datetime
 from neo4j import GraphDatabase
 from openai import OpenAI
 
 # ============================================================
-# SPINNER VERBS
-# ============================================================
-
-SPINNER_VERBS = [
-    'Quizzing', 'Testing', 'Evaluating', 'Grading', 'Checking', 'Verifying',
-    'Analyzing', 'Examining', 'Assessing', 'Questioning', 'Probing', 'Investigating',
-    'Scrutinizing', 'Reviewing', 'Inspecting', 'Pondering', 'Deliberating'
-]
-
-def get_spinner_message() -> str:
-    return f"{random.choice(SPINNER_VERBS)}..."
-
-# ============================================================
-# CONFIGURATION
+# SECRETS
 # ============================================================
 
 def get_secret(key: str) -> str:
-    """Try Streamlit secrets first (cloud), fall back to env vars (local)."""
     try:
         return st.secrets[key]
     except:
@@ -39,86 +22,31 @@ def get_secret(key: str) -> str:
         load_dotenv()
         return os.getenv(key, "")
 
-LLM_MODEL = "gpt-5-mini"
-EMBEDDING_MODEL = "text-embedding-3-small"
-
-# Retrieval settings
-ENTITY_TOP_K = 20
-ENTITY_THRESHOLD = 0.20
-RELATIONSHIP_TOP_K = 30
-RELATIONSHIP_THRESHOLD = 0.20
-PARAGRAPH_TOP_K = 5
-PARAGRAPH_THRESHOLD = 0.25
-
-# Properties to exclude from display
-SKIP_KEYS = {
-    'rel_id', 'chunk_id', 'isLatest', 'created_at', 'updated_at',
-    'superseded_at', 'updates_rel_id', 'extends_rel_id',
-    'embedding', 'embedding_updated_at'
-}
-
 # ============================================================
-# PAGE CONFIG
+# PROCESSED DOCS
 # ============================================================
 
-st.set_page_config(
-    page_title="KG QA Evaluation",
-    page_icon="Q",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+PROCESSED_DOCS = [
+    {"filename": "2014 Italy Wedding of Jon and Amy .docx", "chunks": 7},
+    {"filename": "2023 Honeymoon Trip to Ottawa.docx", "chunks": 9},
+    {"filename": "Hilley 2018.docx", "chunks": 10},
+    {"filename": "Hilley 2024.docx", "chunks": 7},
+    {"filename": "Lehigh People.docx", "chunks": 9},
+    {"filename": "Mitchell and Daschle People.docx", "chunks": 15},
+    {"filename": "People - Windy Hollow Years.docx", "chunks": 15},
+    {"filename": "Solebury Friends.docx", "chunks": 9},
+    {"filename": "The Hard Problem of Consciousness1.docx", "chunks": 7},
+    {"filename": "White House People.docx", "chunks": 15},
+]
 
-st.markdown("""
-<style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    .main-header {
-        text-align: center;
-        padding: 1.5rem 0;
-    }
-    
-    .main-header h1 {
-        font-size: 2rem;
-        font-weight: 600;
-    }
-    
-    .score-perfect { color: #22c55e; font-weight: bold; }
-    .score-good { color: #84cc16; }
-    .score-partial { color: #eab308; }
-    .score-wrong { color: #ef4444; }
-</style>
-""", unsafe_allow_html=True)
+SPINNER_VERBS = ['Quizzing', 'Testing', 'Evaluating', 'Grading', 'Checking', 'Verifying',
+    'Analyzing', 'Examining', 'Assessing', 'Questioning', 'Probing', 'Investigating']
+
+def get_spinner_message():
+    return f"{random.choice(SPINNER_VERBS)}..."
 
 # ============================================================
-# AUTHENTICATION
-# ============================================================
-
-def check_password() -> bool:
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    
-    if st.session_state.authenticated:
-        return True
-    
-    st.markdown('<div class="main-header"><h1>KG QA Evaluation</h1><p>Enter password to continue</p></div>', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        password = st.text_input("Password", type="password", label_visibility="collapsed")
-        
-        if st.button("Login", use_container_width=True):
-            if password == get_secret("APP_PASSWORD"):
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("Incorrect password")
-    
-    return False
-
-# ============================================================
-# DATABASE CONNECTION
+# DATABASE & OPENAI
 # ============================================================
 
 @st.cache_resource
@@ -136,125 +64,293 @@ def get_openai_client():
 # FAMILY MAPPING
 # ============================================================
 
-@st.cache_data
 def load_family_mapping() -> dict:
-    """Load family_mapping.json if available."""
+    """Load family_mapping.json for name disambiguation."""
     try:
-        # Try common locations
-        paths = [
-            Path("family_mapping.json"),
-            Path("../family_mapping.json"),
-            Path(__file__).parent.parent / "family_mapping.json"
-        ]
-        for path in paths:
-            if path.exists():
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+        path = Path("family_mapping.json")
+        if path.exists():
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
     except:
         pass
     return {}
 
 # ============================================================
-# PROCESSED DOCUMENTS
+# PROMPTS (exact copy from qa_eval_agent.py)
 # ============================================================
 
-PROCESSED_DOCS = [
-    {"filename": "2014 Italy Wedding of Jon and Amy .docx", "chunks": 7},
-    {"filename": "2023 Honeymoon Trip to Ottawa.docx", "chunks": 9},
-    {"filename": "Hilley 2018.docx", "chunks": 10},
-    {"filename": "Hilley 2024.docx", "chunks": 7},
-    {"filename": "Lehigh People.docx", "chunks": 9},
-    {"filename": "Mitchell and Daschle People.docx", "chunks": 15},
-    {"filename": "People - Windy Hollow Years.docx", "chunks": 15},
-    {"filename": "Solebury Friends.docx", "chunks": 9},
-    {"filename": "The Hard Problem of Consciousness1.docx", "chunks": 7},
-    {"filename": "White House People.docx", "chunks": 15},
-]
+def get_question_system_prompt(family_mapping: dict) -> str:
+    """Build question generation prompt with family context."""
+    family_json = json.dumps(family_mapping, indent=2) if family_mapping else "{}"
+    
+    return f"""You are a Quiz Question Generator for testing knowledge graph completeness.
+
+Your task is to generate factual questions from the provided text that can be answered using structured knowledge (entities and relationships).
+
+CRITICAL RULES FOR NAME DISAMBIGUATION:
+1. ALWAYS use FULL CANONICAL NAMES, never just first names or nicknames
+2. Instead of "Who is John's father?" → "Who is John Gallivan Hilley's father?"
+3. Instead of "Where did Ryan work?" → "Where did Ryan Patrick Hilley work?"
+4. For non-family people mentioned by first name only, include context: "Ryan (Ottawa tour guide)" not just "Ryan"
+5. Include specific details (places, organizations) to make questions unambiguous
+6. Questions must be specific enough that vector similarity search retrieves the correct context
+
+CRITICAL RULES FOR QUESTION QUALITY:
+1. Do NOT ask time-specific questions for general attributes (preferences, likes, favorites, traits)
+   - BAD: "What ice cream did he like in March?" / "What was his favorite food in 2018?"
+   - GOOD: "What ice cream flavors does John Gallivan Hilley like?"
+2. Only use dates/times for actual events or milestones (births, deaths, trips, jobs, achievements)
+   - GOOD: "When did Ryan Patrick Hilley get married?" / "Where did they travel in 2018?"
+3. Avoid trivial or overly narrow questions — focus on meaningful facts
+4. Questions should test knowledge that would reasonably be stored in a knowledge graph
+
+FAMILY CONTEXT (use these canonical names):
+{family_json}
+
+Question types to generate:
+- Entity identification: "Who is [full name]?" / "What is [specific thing]?"
+- Relationships: "What is the relationship between [full name A] and [full name B]?"
+- Attributes: "Where did [full name] work?" / "What does [full name] like?"
+- Connections: "Who is [full name]'s father?" / "What organization did [full name] attend?"
+
+Rules:
+1. Generate questions that test FACTUAL knowledge extractable from the text
+2. Focus on entities (people, places, organizations, events) and their relationships
+3. Each question should have a clear, specific answer found in the text
+4. Avoid subjective or opinion-based questions
+5. Avoid questions about writing style, tone, or meta-content
+6. Use full names from FAMILY CONTEXT when referring to family members
+
+Output JSON only:
+{{
+  "questions": [
+    {{
+      "question": "string (using full canonical names)",
+      "answer": "string",
+      "type": "entity|relationship|attribute|connection",
+      "entities_involved": ["full name 1", "full name 2"]
+    }}
+  ]
+}}
+"""
+
+
+ANSWER_SYSTEM_PROMPT = """You are a knowledgeable assistant helping answer questions about a personal knowledge graph containing documents, relationships, and facts about people, places, events, and experiences.
+
+Guidelines:
+- Answer directly and naturally without labels like "Short answer:" or "Summary:"
+- Ground your response in the provided context — cite specific facts, quotes, or relationships when relevant
+- ALWAYS provide an answer based on available context — never say "not specified", "not available", or "I don't have this information"
+- If exact information isn't in context, make reasonable inferences from what IS available
+- You may reason about and connect information in the context to draw conclusions
+- Match your response length to the question: brief for simple queries, thorough for complex analysis
+- Write in a warm, conversational tone — informative but not robotic
+- Never reference the graph structure, context format, or data source — just present the information naturally
+- Never ask follow-up questions or offer to search elsewhere"""
+
+
+GRADER_SYSTEM_PROMPT = """You are a grading assistant that evaluates answer correctness.
+
+Compare the generated answer against the expected answer and score on a 1-5 scale:
+
+5: PERFECT — All key facts correct, may have minor phrasing differences
+4: MOSTLY CORRECT — Core answer right, minor details differ or missing
+3: PARTIALLY CORRECT — Got the main idea but some facts wrong or incomplete
+2: RELATED BUT WRONG — Touches the right topic but answer is incorrect
+1: COMPLETELY WRONG — Wrong answer or completely irrelevant
+
+Scoring guidelines:
+- Focus on factual correctness, not exact wording
+- Names can vary slightly (e.g., "John Hilley" vs "John Lee Hilley") — still correct if same person
+- DO NOT penalize misspellings at all — these come from source documents, not the LLM
+- Spelling variations of the same name (e.g., "Ammirati" vs "Amaratti" vs "Ammitati") should still score 5 if the answer is otherwise correct
+- If the generated answer contains the core fact from expected answer, score 4 or 5
+- Only score 1 or 2 if the answer is actually wrong or completely misses the point
+- If misspellings exist, note them in reasoning but do not reduce the score
+
+Output JSON only:
+{
+  "score": 1-5,
+  "correct": true/false,
+  "reasoning": "brief explanation"
+}
+
+Note: "correct" should be true if score >= 3 (at least partially correct)"""
+
+# ============================================================
+# DATABASE QUERIES
+# ============================================================
 
 def get_paragraphs(driver, filename: str, num_chunks: int) -> list:
-    """Get paragraphs for a document."""
     with driver.session() as session:
         result = session.run("""
             MATCH (p:Paragraph {source_filename: $filename})
-            RETURN p.chunk_id AS chunk_id,
-                   p.chunk_index AS chunk_index,
-                   p.text AS text,
-                   p.source_filename AS source_filename
-            ORDER BY p.chunk_index
-            LIMIT $limit
+            RETURN p.chunk_id AS chunk_id, p.chunk_index AS chunk_index,
+                   p.text AS text, p.source_filename AS source_filename
+            ORDER BY p.chunk_index LIMIT $limit
         """, filename=filename, limit=num_chunks)
         return [dict(r) for r in result]
 
+def get_embedding(client, text: str) -> list:
+    response = client.embeddings.create(input=text, model="text-embedding-3-small")
+    return response.data[0].embedding
+
 # ============================================================
-# EMBEDDING & RETRIEVAL
+# RETRIEVAL (exact copy from qa_eval_agent.py)
 # ============================================================
 
-def get_embedding(client, text: str) -> list:
-    response = client.embeddings.create(input=text, model=EMBEDDING_MODEL)
-    return response.data[0].embedding
+# Retrieval settings
+ENTITY_TOP_K = 20
+ENTITY_THRESHOLD = 0.20
+RELATIONSHIP_TOP_K = 30
+RELATIONSHIP_THRESHOLD = 0.20
+PARAGRAPH_TOP_K = 5
+PARAGRAPH_THRESHOLD = 0.25
+
+SKIP_KEYS = {
+    'rel_id', 'chunk_id', 'isLatest', 'created_at', 'updated_at',
+    'superseded_at', 'updates_rel_id', 'extends_rel_id',
+    'embedding', 'embedding_updated_at'
+}
+
+def search_entities(session, embedding: list) -> list:
+    result = session.run("""
+        MATCH (e)
+        WHERE e.embedding IS NOT NULL
+        AND NOT e:Paragraph AND NOT e:Document
+        WITH e, gds.similarity.cosine(e.embedding, $embedding) AS score
+        WHERE score >= $threshold
+        RETURN e.name AS name, 
+               labels(e)[0] AS type,
+               e.entity_id AS entity_id,
+               score
+        ORDER BY score DESC
+        LIMIT $top_k
+    """, embedding=embedding, threshold=ENTITY_THRESHOLD, top_k=ENTITY_TOP_K)
+    return [dict(r) for r in result]
+
+def search_relationships_global(session, embedding: list) -> list:
+    result = session.run("""
+        MATCH (a)-[r]->(b)
+        WHERE r.embedding IS NOT NULL
+        AND NOT a:Paragraph AND NOT a:Document
+        AND NOT b:Paragraph AND NOT b:Document
+        WITH a, r, b, gds.similarity.cosine(r.embedding, $embedding) AS score
+        WHERE score >= $threshold
+        RETURN a.name AS from_name,
+               labels(a)[0] AS from_type,
+               type(r) AS rel_type,
+               b.name AS to_name,
+               labels(b)[0] AS to_type,
+               properties(r) AS props,
+               score
+        ORDER BY score DESC
+        LIMIT $top_k
+    """, embedding=embedding, threshold=RELATIONSHIP_THRESHOLD, top_k=RELATIONSHIP_TOP_K)
+    return [dict(r) for r in result]
+
+def get_entity_relationships_scored(session, entity_names: list, query_embedding: list, top_k: int = 10) -> list:
+    if not entity_names:
+        return []
+    
+    result = session.run("""
+        MATCH (a)-[r]->(b)
+        WHERE (a.name IN $names OR b.name IN $names)
+        AND r.embedding IS NOT NULL
+        AND NOT a:Paragraph AND NOT a:Document
+        AND NOT b:Paragraph AND NOT b:Document
+        AND type(r) <> "MENTIONED_IN"
+        WITH a, r, b, gds.similarity.cosine(r.embedding, $embedding) AS score
+        ORDER BY score DESC
+        LIMIT $top_k
+        RETURN a.name AS from_name,
+               labels(a)[0] AS from_type,
+               type(r) AS rel_type,
+               b.name AS to_name,
+               labels(b)[0] AS to_type,
+               properties(r) AS props,
+               score
+    """, names=entity_names, embedding=query_embedding, top_k=top_k)
+    
+    return [dict(r) for r in result]
+
+def search_paragraphs(session, embedding: list) -> list:
+    result = session.run("""
+        MATCH (p:Paragraph)
+        WHERE p.embedding IS NOT NULL
+        WITH p, gds.similarity.cosine(p.embedding, $embedding) AS score
+        WHERE score >= $threshold
+        RETURN p.text AS text, 
+               p.source_filename AS source,
+               p.chunk_index AS chunk_index,
+               score
+        ORDER BY score DESC
+        LIMIT $top_k
+    """, embedding=embedding, threshold=PARAGRAPH_THRESHOLD, top_k=PARAGRAPH_TOP_K)
+    return [dict(r) for r in result]
+
+def get_entity_properties(session, entity_names: list) -> list:
+    if not entity_names:
+        return []
+    
+    result = session.run("""
+        MATCH (e)
+        WHERE e.name IN $names
+        AND NOT e:Paragraph AND NOT e:Document
+        WITH e, labels(e)[0] AS type,
+             [k IN keys(e) WHERE NOT k IN ['embedding', 'entity_id', 'created_at', 'updated_at']] AS prop_keys
+        RETURN e.name AS name,
+               type,
+               apoc.map.fromPairs([k IN prop_keys | [k, e[k]]]) AS properties
+    """, names=entity_names)
+    return [dict(r) for r in result]
+
+def deduplicate_relationships(relationships: list) -> list:
+    seen = set()
+    unique = []
+    for rel in relationships:
+        context = rel.get('props', {}).get('context', '') if rel.get('props') else ''
+        key = (rel['from_name'], rel['rel_type'], rel['to_name'], context)
+        if key not in seen:
+            seen.add(key)
+            unique.append(rel)
+    return unique
 
 def format_relationship_props(props: dict) -> str:
     if not props:
         return ""
+    
     formatted = []
     for key, value in props.items():
-        if key in SKIP_KEYS or value is None or value == '':
+        if key in SKIP_KEYS:
             continue
-        formatted.append(f"{key.replace('_', ' ')}: {value}")
+        if value is None or value == '':
+            continue
+        display_key = key.replace('_', ' ')
+        formatted.append(f"{display_key}: {value}")
+    
     return "; ".join(formatted) if formatted else ""
 
-def retrieve_context(driver, client, question: str) -> str:
-    """Retrieve context from KG.DL for a question."""
-    embedding = get_embedding(client, question)
-    
-    with driver.session() as session:
-        # Search entities
-        entities = session.run("""
-            MATCH (e)
-            WHERE e.embedding IS NOT NULL AND NOT e:Paragraph AND NOT e:Document
-            WITH e, gds.similarity.cosine(e.embedding, $embedding) AS score
-            WHERE score >= $threshold
-            RETURN e.name AS name, labels(e)[0] AS type, score
-            ORDER BY score DESC LIMIT $top_k
-        """, embedding=embedding, threshold=ENTITY_THRESHOLD, top_k=ENTITY_TOP_K)
-        entities = [dict(r) for r in entities]
-        
-        # Search relationships
-        relationships = session.run("""
-            MATCH (a)-[r]->(b)
-            WHERE r.embedding IS NOT NULL
-            AND NOT a:Paragraph AND NOT a:Document AND NOT b:Paragraph AND NOT b:Document
-            WITH a, r, b, gds.similarity.cosine(r.embedding, $embedding) AS score
-            WHERE score >= $threshold
-            RETURN a.name AS from_name, type(r) AS rel_type, b.name AS to_name,
-                   properties(r) AS props, score
-            ORDER BY score DESC LIMIT $top_k
-        """, embedding=embedding, threshold=RELATIONSHIP_THRESHOLD, top_k=RELATIONSHIP_TOP_K)
-        relationships = [dict(r) for r in relationships]
-        
-        # Search paragraphs
-        paragraphs = session.run("""
-            MATCH (p:Paragraph)
-            WHERE p.embedding IS NOT NULL
-            WITH p, gds.similarity.cosine(p.embedding, $embedding) AS score
-            WHERE score >= $threshold
-            RETURN p.text AS text, p.source_filename AS source, p.chunk_index AS chunk_index, score
-            ORDER BY score DESC LIMIT $top_k
-        """, embedding=embedding, threshold=PARAGRAPH_THRESHOLD, top_k=PARAGRAPH_TOP_K)
-        paragraphs = [dict(r) for r in paragraphs]
-    
-    # Format context
+def format_context(entities: list, relationships: list, entity_props: list, paragraphs: list = None) -> str:
     sections = []
     
-    if entities:
+    if entity_props:
         lines = ["ENTITIES:"]
-        for e in entities[:10]:
-            lines.append(f"  - {e['name']} ({e['type']})")
+        for ep in entity_props:
+            props_str = ""
+            if ep.get("properties"):
+                props = ep["properties"]
+                simple_props = {k: v for k, v in props.items() 
+                               if isinstance(v, (str, int, float, bool)) 
+                               and len(str(v)) < 100}
+                if simple_props:
+                    props_str = " | " + ", ".join(f"{k}: {v}" for k, v in list(simple_props.items())[:5])
+            lines.append(f"  - {ep['name']} ({ep['type']}){props_str}")
         sections.append("\n".join(lines))
     
     if relationships:
         lines = ["RELEVANT RELATIONSHIPS:"]
-        for rel in relationships[:20]:
+        for rel in relationships:
             props_str = format_relationship_props(rel.get('props', {}))
             if props_str:
                 lines.append(f"  - {rel['from_name']} -[{rel['rel_type']}]-> {rel['to_name']} ({props_str})")
@@ -263,44 +359,70 @@ def retrieve_context(driver, client, question: str) -> str:
         sections.append("\n".join(lines))
     
     if paragraphs:
-        lines = ["SOURCE TEXT:"]
+        lines = ["SOURCE TEXT (for quotes and details):"]
         for para in paragraphs:
-            lines.append(f"\n[From: {para['source'][:40]}..., chunk {para['chunk_index']}]")
+            source_short = para['source'][:40] + "..." if len(para['source']) > 40 else para['source']
+            lines.append(f"\n[From: {source_short}, chunk {para['chunk_index']}]")
             lines.append(para['text'])
         sections.append("\n".join(lines))
     
-    return "\n\n".join(sections) if sections else "No relevant context found."
+    if not sections:
+        return "No relevant context found in the knowledge graph."
+    
+    return "\n\n".join(sections)
+
+def retrieve_context(driver, client, question: str) -> str:
+    embedding = get_embedding(client, question)
+    
+    with driver.session() as session:
+        entities = search_entities(session, embedding)
+        global_relationships = search_relationships_global(session, embedding)
+        
+        entity_names = [e['name'] for e in entities[:5]]
+        entity_relationships = get_entity_relationships_scored(session, entity_names, embedding, top_k=10)
+        
+        combined_relationships = global_relationships + entity_relationships
+        relationships = deduplicate_relationships(combined_relationships)
+        relationships.sort(key=lambda x: x.get('score', 0), reverse=True)
+        
+        paragraphs = search_paragraphs(session, embedding)
+        
+        rel_entity_names = []
+        for r in relationships[:5]:
+            rel_entity_names.extend([r['from_name'], r['to_name']])
+        all_names = list(set(entity_names + rel_entity_names))
+        
+        try:
+            entity_props = get_entity_properties(session, all_names)
+        except Exception:
+            entity_props = []
+    
+    return format_context(entities, relationships, entity_props, paragraphs)
 
 # ============================================================
-# LLM CALLS
+# LLM CALLS (exact copy from qa_eval_agent.py)
 # ============================================================
 
 def generate_questions(client, paragraph_text: str, family_mapping: dict) -> list:
-    """Generate questions from a paragraph."""
-    family_json = json.dumps(family_mapping, indent=2) if family_mapping else "{}"
+    system_prompt = get_question_system_prompt(family_mapping)
     
-    system_prompt = f"""You are a Quiz Question Generator for testing knowledge graph completeness.
+    user_prompt = f"""Generate 1 factual quiz questions from this text:
 
-Generate factual questions from the provided text that can be answered using structured knowledge.
+TEXT:
+\"\"\"{paragraph_text}\"\"\"
 
-RULES:
-1. Use FULL CANONICAL NAMES from FAMILY CONTEXT, never just first names
-2. Do NOT ask time-specific questions for preferences/likes (BAD: "What ice cream in March?")
-3. Only use dates for actual events/milestones
-4. Focus on meaningful facts, not trivial details
+Remember:
+- Use FULL CANONICAL NAMES from FAMILY CONTEXT for all family members
+- Make questions specific enough for vector search to find the right context
+- Include dates, places, or other specifics when available
 
-FAMILY CONTEXT:
-{family_json}
-
-Output JSON only:
-{{"questions": [{{"question": "string", "answer": "string"}}]}}
-"""
+Return JSON only."""
 
     response = client.chat.completions.create(
-        model=LLM_MODEL,
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Generate 1 factual question from:\n\n{paragraph_text}"}
+            {"role": "user", "content": user_prompt}
         ],
         response_format={"type": "json_object"}
     )
@@ -308,72 +430,54 @@ Output JSON only:
     result = json.loads(response.choices[0].message.content)
     return result.get("questions", [])
 
-
 def generate_answer(client, question: str, context: str) -> str:
-    """Generate answer from context."""
-    system_prompt = """You are a knowledgeable assistant answering questions from a personal knowledge graph.
-
-Guidelines:
-- Answer directly and naturally
-- ALWAYS provide an answer — never say "not specified" or "not available"
-- If exact info isn't in context, make reasonable inferences
-- Never ask follow-up questions"""
-
     response = client.chat.completions.create(
-        model=LLM_MODEL,
+        model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
             {"role": "user", "content": f"CONTEXT:\n{context}\n\nQUESTION: {question}"}
         ]
     )
     return response.choices[0].message.content
 
-
 def grade_answer(client, question: str, expected: str, generated: str) -> dict:
-    """Grade the generated answer."""
-    system_prompt = """Grade the answer on 1-5 scale:
-5: PERFECT — All key facts correct
-4: MOSTLY CORRECT — Core answer right, minor details differ
-3: PARTIALLY CORRECT — Main idea right but some facts wrong
-2: RELATED BUT WRONG — Right topic but wrong answer
-1: COMPLETELY WRONG
+    user_prompt = f"""QUESTION: {question}
 
-DO NOT penalize misspellings — they come from source documents.
+EXPECTED ANSWER: {expected}
 
-Output JSON: {"score": 1-5, "reasoning": "brief explanation"}"""
+GENERATED ANSWER: {generated}
+
+Score the generated answer on a 1-5 scale based on factual correctness compared to the expected answer."""
 
     response = client.chat.completions.create(
-        model=LLM_MODEL,
+        model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"QUESTION: {question}\nEXPECTED: {expected}\nGENERATED: {generated}"}
+            {"role": "system", "content": GRADER_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt}
         ],
         response_format={"type": "json_object"}
     )
+    
     return json.loads(response.choices[0].message.content)
 
 # ============================================================
 # MAIN EVALUATION
 # ============================================================
 
-def run_evaluation(driver, client, filename: str, num_chunks: int, progress_callback=None):
-    """Run QA evaluation on a document."""
-    family_mapping = load_family_mapping()
+def run_evaluation(driver, client, filename: str, num_chunks: int, progress_bar, status_text):
     paragraphs = get_paragraphs(driver, filename, num_chunks)
-    
+    family_mapping = load_family_mapping()
     results = []
     scores = []
     
     for i, para in enumerate(paragraphs):
-        if progress_callback:
-            progress_callback(i, len(paragraphs), f"Processing chunk {i+1}/{len(paragraphs)}")
+        progress_bar.progress((i + 1) / len(paragraphs))
+        status_text.text(f"Processing chunk {i+1}/{len(paragraphs)}...")
         
-        # Skip short paragraphs
         if len(para['text'].strip()) < 50:
             continue
         
         try:
-            # Generate question
             questions = generate_questions(client, para['text'], family_mapping)
             if not questions:
                 continue
@@ -382,14 +486,10 @@ def run_evaluation(driver, client, filename: str, num_chunks: int, progress_call
             question = q['question']
             expected = q['answer']
             
-            # Retrieve context and generate answer
             context = retrieve_context(driver, client, question)
             generated = generate_answer(client, question, context)
-            
-            # Grade
-            grade_result = grade_answer(client, question, expected, generated)
-            score = grade_result.get('score', 1)
-            reasoning = grade_result.get('reasoning', '')
+            grade = grade_answer(client, question, expected, generated)
+            score = grade.get('score', 1)
             
             scores.append(score)
             results.append({
@@ -398,18 +498,12 @@ def run_evaluation(driver, client, filename: str, num_chunks: int, progress_call
                 "expected": expected,
                 "generated": generated,
                 "score": score,
-                "reasoning": reasoning
+                "reasoning": grade.get('reasoning', '')
             })
-            
         except Exception as e:
-            results.append({
-                "chunk_index": para['chunk_index'],
-                "error": str(e)
-            })
+            results.append({"chunk_index": para['chunk_index'], "error": str(e)})
     
-    # Calculate metrics
     avg_score = sum(scores) / len(scores) if scores else 0
-    
     return {
         "results": results,
         "metrics": {
@@ -427,97 +521,86 @@ def run_evaluation(driver, client, filename: str, num_chunks: int, progress_call
     }
 
 # ============================================================
-# MAIN APP
+# PAGE
 # ============================================================
 
-def main():
-    if not check_password():
-        return
+st.markdown('<div style="text-align:center;padding:1.5rem 0;"><h1>KG QA Evaluation</h1></div>', unsafe_allow_html=True)
+
+if "authenticated" not in st.session_state or not st.session_state.authenticated:
+    st.warning("Please login from the main page first.")
+    st.stop()
+
+driver = get_driver()
+client = get_openai_client()
+
+doc_options = {f"{d['filename']} ({d['chunks']} chunks)": d for d in PROCESSED_DOCS}
+selected = st.selectbox("Select document to evaluate", options=list(doc_options.keys()))
+
+if selected:
+    doc = doc_options[selected]
+    max_chunks = doc['chunks']
+    num_chunks = st.slider("Number of chunks", min_value=1, max_value=max_chunks, value=max_chunks)
     
-    st.markdown('<div class="main-header"><h1>KG QA Evaluation</h1></div>', unsafe_allow_html=True)
-    
-    driver = get_driver()
-    client = get_openai_client()
-    
-    # Use hardcoded document list
-    docs = PROCESSED_DOCS
-    
-    # Document selection
-    doc_options = {f"{d['filename']} ({d['chunks']} chunks)": d for d in docs}
-    selected = st.selectbox("Select document to evaluate", options=list(doc_options.keys()))
-    
-    if selected:
-        doc = doc_options[selected]
+    if st.button("Run Evaluation", use_container_width=True):
+        st.warning("⚠️ Don't switch pages during evaluation — it will stop the process.")
+        progress_bar = st.progress(0)
+        status_text = st.empty()
         
-        # Number of chunks
-        max_chunks = doc['chunks']
-        num_chunks = st.slider("Number of chunks to evaluate", min_value=1, max_value=min(max_chunks, 50), value=min(10, max_chunks))
+        results = run_evaluation(driver, client, doc['filename'], num_chunks, progress_bar, status_text)
         
-        # Run evaluation
-        if st.button("Run Evaluation", use_container_width=True):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            def update_progress(current, total, message):
-                progress_bar.progress(current / total)
-                status_text.text(message)
-            
-            with st.spinner(get_spinner_message()):
-                results = run_evaluation(driver, client, doc['filename'], num_chunks, update_progress)
-            
-            progress_bar.progress(1.0)
-            status_text.text("Complete!")
-            
-            # Display results
-            st.markdown("---")
-            
-            # Metrics
-            metrics = results['metrics']
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Questions", metrics['total'])
-            with col2:
-                st.metric("Average Score", f"{metrics['average_score']}/5")
-            with col3:
-                st.metric("Percentage", metrics['average_percent'])
-            
-            # Distribution
-            st.markdown("**Score Distribution**")
-            dist = metrics['distribution']
-            st.text(f"""  5 (Perfect):        {dist[5]}
+        st.session_state.qa_results = results
+        st.session_state.qa_doc_name = doc['filename']
+        
+        status_text.text("Complete!")
+
+if "qa_results" in st.session_state and st.session_state.qa_results:
+    results = st.session_state.qa_results
+    doc_name = st.session_state.get("qa_doc_name", "Unknown")
+    
+    st.markdown("---")
+    st.markdown(f"**Results for:** {doc_name}")
+    
+    metrics = results['metrics']
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Questions", metrics['total'])
+    col2.metric("Average Score", f"{metrics['average_score']}/5")
+    col3.metric("Percentage", metrics['average_percent'])
+    
+    st.markdown("**Score Distribution**")
+    dist = metrics['distribution']
+    st.text(f"""  5 (Perfect):        {dist[5]}
   4 (Mostly correct): {dist[4]}
   3 (Partial):        {dist[3]}
   2 (Related/wrong):  {dist[2]}
   1 (Wrong):          {dist[1]}""")
-            
-            # Detailed results
-            st.markdown("---")
-            st.markdown("**Detailed Results**")
-            
-            for r in results['results']:
-                if 'error' in r:
-                    st.error(f"Chunk {r['chunk_index']}: {r['error']}")
-                    continue
-                
-                score = r['score']
-                if score == 5:
-                    icon = "✅"
-                    color = "score-perfect"
-                elif score >= 4:
-                    icon = "🟢"
-                    color = "score-good"
-                elif score >= 3:
-                    icon = "🟡"
-                    color = "score-partial"
-                else:
-                    icon = "🔴"
-                    color = "score-wrong"
-                
-                with st.expander(f"{icon} Chunk {r['chunk_index']} — Score: {score}/5"):
-                    st.markdown(f"**Question:** {r['question']}")
-                    st.markdown(f"**Expected:** {r['expected']}")
-                    st.markdown(f"**Generated:** {r['generated']}")
-                    st.markdown(f"**Reasoning:** {r['reasoning']}")
-
-if __name__ == "__main__":
-    main()
+    
+    results_json = json.dumps(results, indent=2)
+    filename_safe = doc_name.replace('.docx', '').replace(' ', '_')
+    st.download_button(
+        label="Download Results (JSON)",
+        data=results_json,
+        file_name=f"eval_{filename_safe}.json",
+        mime="application/json"
+    )
+    
+    st.markdown("---")
+    st.markdown("**Detailed Results**")
+    
+    for r in results['results']:
+        if 'error' in r:
+            st.error(f"Chunk {r['chunk_index']}: {r['error']}")
+            continue
+        
+        score = r['score']
+        icon = "✅" if score == 5 else "🟢" if score >= 4 else "🟡" if score >= 3 else "🔴"
+        
+        with st.expander(f"{icon} Chunk {r['chunk_index']} — Score: {score}/5"):
+            st.markdown(f"**Question:** {r['question']}")
+            st.markdown(f"**Expected:** {r['expected']}")
+            st.markdown(f"**Generated:** {r['generated']}")
+            st.markdown(f"**Reasoning:** {r['reasoning']}")
+    
+    if st.button("Clear Results"):
+        del st.session_state.qa_results
+        del st.session_state.qa_doc_name
+        st.rerun()

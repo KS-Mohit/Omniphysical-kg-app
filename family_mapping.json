@@ -1,0 +1,229 @@
+{
+  "narrator": "John Hilley",
+
+  "direct_family": {
+    "John Hilley (narrator, b. October 22, 1947)": ["John", "I", "me", "John Lee Hilley", "Gra"],
+    "Rosemary Mulholland Hilley (wife, b. June 14, 1948)": ["Rosemary", "Rosemary Mulholland","Rosemary Hilley", "my wife", "My Girl", "Goo"],
+    "Dorothy Myers Hilley (mother, b. November 4, 1921, d. October 4, 2011)": ["Dorothy", "my mother", "Mother", "our mother"],
+    "William Allen Hilley Jr. (father, b. August 11, 1913, d. August 28, 1980)": ["my father", "Dad", "our father"],
+    "William Allen Hilley III (brother, b. August 28, 1943)": ["Bill", "Bill Hilley", "my brother"],
+    "Virgil Donald Hilley (brother, b. March 18, 1946)": ["Don", "Don Hilley", "my brother"],
+    "Lynn Hilley Crudo (sister, b. April 27, 1958)": ["Lynn", "Lynn Hilley", "my sister"],
+    "Ryan Hilley (son, b. April 1, 1978)": ["Ryan", "Ryan Hilley", "Ryan Mulholland","Ryan Patrick Hilley", "Ryan Patrick Mulholland", "our son", "my son", "Ryan Patrick Mulholland Hilley"],
+    "Brendan Sean Hilley (son)": ["Brendan", "our son", "my son"],
+    "John Gallivan Hilley (grandson, b. November 17, 2016, son of Ryan Patrick Hilley and Meagan Gallivan)": ["our grandson", "my grandson", "little john", "John G Hilley"],
+    "Primrose Hilley Gallivan (granddaughter of John Hilley, daughter of Ryan Patrick Hilley and Meagan Gallivan, sister of John Gallivan Hilley)": ["Primrose", "our granddaughter", "Prim"]
+  },
+
+  "grandparents": {
+    "Eula Noble Myers (maternal grandmother, Grammie, b. August 5, 1896, d. November 30, 1972)": [],
+    "Lewis Virgle Myers (maternal grandfather, LV, b. July 7, 1891, d. March 3, 1950)": ["Luther Virgel Myers"],
+    "William Allen Hilley Sr. (paternal grandfather, b. January 17, 1860, d. February 27, 1918)": [],
+    "Minnie Martina Strain Hilley (paternal grandmother, b. June 15, 1868, d. July 8, 1947)": []
+  },
+
+  "great_grandparents": [
+    "Melvene Havana Roberts Noble (Melvene Noble, maternal great grandmother, b. December 28, 1864, d. March 27, 1960)",
+    "Wesley Noble (maternal great grandfather, b. May 5, 1859, d. May 25, 1909)",
+    "Lewis W. Myers (b. April 10, 1847, d. May 14, 1904)",
+    "Naomi Osteen Myers (b. July 23, 1852, d. March 21, 1936)",
+    "James Ausbern Hilley (paternal great grandfather, b. 1839, d. 1914)",
+    "Lucie A. McTyre (paternal great grandmother, b. 1841, d. 1874)",
+    "William L. Strain (b. 1818, d. 1896)",
+    "Margaret Ellen Harris Ray"
+  ],
+
+  "fathers_siblings": [
+    "Mabel Hilley (b. 1889, d. 1947)",
+    "Paul Hilley (b. 1891, d. 1900)",
+    "Lucy Hilley (b. 1893, d. 1942)",
+    "Carl Donald Hilley (Carl, b. 1896, d. 1943)",
+    "Margaret Hilley (father's sister, aunt, b. 1900, d. 1985)",
+    "Alice Hilley (father's sister, aunt, b. 1902, d. 1974)"
+  ],
+
+  "mothers_siblings": [
+    "Lenore Myers (mother's sister, aunt)"
+  ],
+
+  "in_laws": {
+    "Joe Edward Mulholland (Rosemary's father)": {},
+    "Betty Petrocy Mulholland (Rosemary's mother)": {},
+    "Shawn Patrick Mulholland (Shawn, Rosemary's younger brother)": {},
+    "Margaret Mulholland Brennan (Peggy, Rosemary's sister)": {},
+    "Mike Brennan (Peggy's husband)": {},
+    "Meghan Brennan (daughter of Margaret Mulholland Brennan, Peggy's daughter, b. October 9, 1980)": {},
+    "Joseph William Mulholland (Rosemary's older brother)": {},
+    "Sylvia (Joseph William Mulholland's wife)": {},
+    "Meagan Gallivan (Ryan's wife, b. February 6, 1979, Ryan took her surname Gallivan)": {},
+    "John Gallivan (Meagan's father)": {},
+    "Gail Gallivan (Meagan's mother)": {},
+    "Mary Lou (Virgil Donald Hilley's first wife, Don's first wife, died of cancer 1989, mother of Theresa, Mike, Jon Hilley)": {},
+    "Donna Riley (Virgil Donald Hilley's wife, Don's current wife, married January 1994, mother of Chris Riley)": {"aliases": ["Donna Hilley"]},
+    "Unknown Riley (Donna Riley's ex-husband, Chris Riley's biological father, police officer, died of heart attack shortly before January 1994)": {}
+  },
+
+  "nephews_nieces": [
+    "William Allen Hilley IV (Bill IV, son of William Allen Hilley III, b. December 9, 1972, spouse: Michele Croner, child: Alexandra)",
+    "George Hilley (son of William Allen Hilley III, spouse: Jenn Lewicki, child: Maya)",
+    "Theresa Hilley (daughter of Virgil Donald Hilley and Mary Lou, b. 2/20/74, MD, spouse: Eric Vensel, children: Ashley, Grant)",
+    "Mike Hilley (son of Virgil Donald Hilley and Mary Lou, b. 10/6/80, spouse: Cara Bragg, children: Miles, Shane)",
+    "Jon Hilley (Jonathan, son of Virgil Donald Hilley and Mary Lou, b. 2/1/82, spouse: Amy Rizzo, child: Quinn)",
+    "Chris Riley (son of Donna Riley, stepson of Virgil Donald Hilley, b. 1/14/83, spouse: Britain Dwyre)",
+    "Christy Crudo Blackburn (Christy, daughter of Lynn Hilley Crudo, spouse: Eric Blackburn, child: Blake Kendall)",
+    "Bree Crudo Aronoff (Bree, daughter of Lynn Hilley Crudo, spouse: Shawn Aronoff, child: Aria Lauren)",
+    "Debra Joy Noble (Joy, daughter of Lenore Myers, cousin)"
+  ],
+
+  "other_relatives": [
+    "Norm Noble (grandson of Grammie's brother Fred)",
+    "Barbara Gallivan (John Gallivan's sister)",
+    "Molly Gallivan (Barbara's daughter)",
+    "Gail Hoyt (Meagan's aunt, partner: Steve Merman)"
+  ],
+
+  "ambiguous_names": {
+    "John": [
+      "John Lee Hilley (narrator, b.1947)",
+      "John Gallivan Hilley (grandson)",
+      "John Gallivan (Meagan's father)",
+      "John Gallivan (Barbara's husband, different person)",
+      "Jon Hilley (nephew, Bill's son)"
+    ],
+    "Bill": [
+      "William Allen Hilley Sr. (paternal grandfather, b.1860)",
+      "William Allen Hilley Jr. (father, b.1913)",
+      "William Allen Hilley III (brother, b.1943)",
+      "William Allen Hilley IV (nephew, Bill III's son)"
+    ],
+    "Don": [
+      "Virgil Donald Hilley (brother, b.1946)",
+      "Carl Donald Hilley (father's brother, b.1896)"
+    ],
+    "Jim": [
+      "Jim Greenleaf (Lehigh colleague)",
+      "Jim Tobak (Lehigh colleague)",
+      "Jim Sasser (Senate Budget Chairman)",
+      "Jim Carr (Budget colleague)",
+      "Jim English (Budget colleague)",
+      "Jim Weber (Senate/White House/Nasdaq colleague)",
+      "Jim Heimbach (White House)"
+    ],
+    "Mike": [
+      "Mike Brennan (Peggy's husband)",
+      "Mike Hilley (nephew, Bill's son)"
+    ],
+    "George": [
+      "George Hilley (nephew, Bill's son)",
+      "George Mitchell (Senate Majority Leader)"
+    ],
+    "Bob": [
+      "Bob Holmes (Chateauroux)",
+      "Bob Rubin (Treasury Secretary)",
+      "Bob Bean (Budget colleague)",
+      "Bob Carolla (Mitchell staff)",
+      "Bob Greifeld (Nasdaq)",
+      "Bob Thornton (Lehigh)",
+      "Bob Eckenrode (Bethlehem neighbor)",
+      "Bob Jacobs (Florida friend)",
+      "Bob Ozols (Great Falls neighbor)",
+      "Bob Vickers (Poker group)",
+      "Bob LaBelle (Falcon Ridge neighbor)"
+    ],
+    "Mary": [
+      "Mary Lou (Don's wife)",
+      "Mary Jacobs (Florida friend)",
+      "Mary Beth Brady (Solebury friend)",
+      "Mary McAleny (Mitchell staff)",
+      "Mary Schapiro (Nasdaq)"
+    ],
+    "Chris": [
+      "Chris Riley (nephew, Don's son)",
+      "Chris Hoyt (Redlands friend)",
+      "Chris Williams (Mitchell staff)",
+      "Chris Jennings (White House)",
+      "Chris Ross (Solebury friend)"
+    ],
+    "David": [
+      "David Persweig (Solebury friend)",
+      "David Schwartz (Solebury)",
+      "David Brinn (Solebury)",
+      "David Leshan (Solebury)",
+      "David Petersen (Poker group)",
+      "David Malpass (Budget colleague)",
+      "David Tyler (Solebury student)"
+    ],
+    "Tom": [
+      "Tom Daschle (Democratic Leader)",
+      "Tom Mazich (Falcon Ridge neighbor)"
+    ],
+    "Frank": [
+      "Frank Ammirati (Solebury)",
+      "Frank Raines (OMB Director)",
+      "Frank Zarb (Nasdaq)"
+    ],
+    "Pete": [
+      "Pete Connelly (Great Falls neighbor)",
+      "Pete Rouse (Senate colleague)"
+    ],
+    "Kim": [
+      "Kim Wallace (Budget/Mitchell staff)"
+    ],
+    "Larry": [
+      "Larry Stein (Senate friend)",
+      "Larry Kantor (Lehigh colleague)",
+      "Larry Darnell (Solebury)",
+      "Larry Summers (White House)"
+    ],
+    "Rick": [
+      "Rick Brandon (Budget colleague)",
+      "Rick Ketchum (Nasdaq)",
+      "Rick Redman (Andover friend)",
+      "Rick Allen (Andover friend)"
+    ],
+    "Doug": [
+      "Doug Olin (Budget colleague)",
+      "Doug Cook (Budget colleague)",
+      "Doug Hall (Budget colleague)",
+      "Doug Carey (Falcon Ridge neighbor)"
+    ],
+    "Donna": [
+      "Donna Riley (Virgil Donald Hilley's current wife, married 1994, also called Donna Hilley)"
+    ],
+    "Eric": [
+      "Eric Vensel (Theresa Hilley's husband)",
+      "Eric Blackburn (Christy Crudo Blackburn's husband)"
+    ],
+    "Margaret": [
+      "Margaret Hilley (father's sister)",
+      "Margaret Mulholland Brennan (Peggy, Rosemary's sister)",
+      "Margaret Maiola (mother's best friend)"
+    ],
+    "Alice": [
+      "Alice Hilley (father's sister)",
+      "Alice Connelly (Great Falls neighbor)",
+      "Alice Aughtry (Mitchell staff)"
+    ],
+    "Carl": [
+      "Carl Donald Hilley (father's brother)",
+      "Carl Gethers (Solebury student)",
+      "Carl Beitleman (Lehigh colleague)"
+    ],
+    "Meagan/Meghan": [
+      "Meagan Gallivan (Ryan/Ryan Hilley's wife, b. February 6, 1979)",
+      "Meghan Brennan (Peggy's daughter, b. October 9, 1980)"
+    ],
+    "Betty": [
+      "Betty Petrocy Mulholland (Rosemary's mother, most common reference)"
+    ],
+    "Ryan": [
+      "Ryan Hilley (son, b.1978, may appear as Ryan Hilley, Ryan Patrick Hilley, Ryan Mulholland, or Ryan Patrick Mulholland Hilley)"
+    ],
+    "Goo": [
+      "Rosemary Mulholland Hilley (wife, nickname)"
+    ],
+    "Gra": [
+      "John Hilley (narrator, nickname)"
+    ]
+  }
+}
