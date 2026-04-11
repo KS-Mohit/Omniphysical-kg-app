@@ -154,6 +154,33 @@ def check_password() -> bool:
     return False
 
 # ============================================================
+# RELATIONSHIP PROPERTIES FORMATTING
+# ============================================================
+
+# Properties to exclude from display
+SKIP_KEYS = {
+    'rel_id', 'chunk_id', 'isLatest', 'created_at', 'updated_at',
+    'superseded_at', 'updates_rel_id', 'extends_rel_id',
+    'embedding', 'embedding_updated_at'
+}
+
+def format_relationship_props(props: dict) -> str:
+    """Format relationship properties for LLM context."""
+    if not props:
+        return ""
+    
+    formatted = []
+    for key, value in props.items():
+        if key in SKIP_KEYS:
+            continue
+        if value is None or value == '':
+            continue
+        display_key = key.replace('_', ' ')
+        formatted.append(f"{display_key}: {value}")
+    
+    return "; ".join(formatted) if formatted else ""
+
+# ============================================================
 # KNOWLEDGE GRAPH RETRIEVER
 # ============================================================
 
@@ -218,7 +245,7 @@ class KGRetriever:
                    type(r) AS rel_type,
                    b.name AS to_name,
                    labels(b)[0] AS to_type,
-                   r.context AS context,
+                   properties(r) AS props,
                    score
         """, names=entity_names, embedding=query_embedding, top_k=top_k)
         
@@ -244,7 +271,8 @@ class KGRetriever:
         seen = set()
         unique = []
         for rel in relationships:
-            key = (rel['from_name'], rel['rel_type'], rel['to_name'], rel.get('context', ''))
+            context = rel.get('props', {}).get('context', '') if rel.get('props') else ''
+            key = (rel['from_name'], rel['rel_type'], rel['to_name'], context)
             if key not in seen:
                 seen.add(key)
                 unique.append(rel)
@@ -268,12 +296,15 @@ class KGRetriever:
                 lines.append(f"  - {ep['name']} ({ep['type']}){props_str}")
             sections.append("\n".join(lines))
         
-        # Relationship matches section (already deduplicated before calling this)
+        # Relationship matches section (with full properties)
         if relationships:
             lines = ["RELEVANT RELATIONSHIPS:"]
             for rel in relationships:
-                context_str = f" ({rel['context']})" if rel.get('context') else ""
-                lines.append(f"  - {rel['from_name']} -[{rel['rel_type']}]-> {rel['to_name']}{context_str}")
+                props_str = format_relationship_props(rel.get('props', {}))
+                if props_str:
+                    lines.append(f"  - {rel['from_name']} -[{rel['rel_type']}]-> {rel['to_name']} ({props_str})")
+                else:
+                    lines.append(f"  - {rel['from_name']} -[{rel['rel_type']}]-> {rel['to_name']}")
             sections.append("\n".join(lines))
         
         # Paragraph section
@@ -366,16 +397,16 @@ Guidelines:
                            e.entity_id AS entity_id
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, threshold=0.25, top_k=10)
+                """, embedding=query_embedding, threshold=0.20, top_k=20)
                 entities = [dict(r) for r in result]
                 
-                log(f"[2] Found {len(entities)} relevant entities (threshold=0.25):")
+                log(f"[2] Found {len(entities)} relevant entities (threshold=0.20):")
                 for e in entities[:5]:
                     log(f"    - {e['name']} ({e['type']}) [score: {e['score']:.3f}]")
                 
                 self.update_spinner(spinner_placeholder)
                 
-                # [3a] Search relationships globally (with threshold)
+                # [3a] Search relationships globally (with threshold) - returns all props
                 result = session.run("""
                     MATCH (a)-[r]->(b)
                     WHERE r.embedding IS NOT NULL
@@ -388,14 +419,14 @@ Guidelines:
                            type(r) AS rel_type,
                            b.name AS to_name,
                            labels(b)[0] AS to_type,
-                           r.context AS context,
+                           properties(r) AS props,
                            score
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, threshold=0.25, top_k=20)
+                """, embedding=query_embedding, threshold=0.20, top_k=30)
                 global_relationships = [dict(r) for r in result]
                 
-                log(f"[3a] Found {len(global_relationships)} global relationships (threshold=0.25):")
+                log(f"[3a] Found {len(global_relationships)} global relationships (threshold=0.20):")
                 for r in global_relationships[:5]:
                     log(f"    - {r['from_name']} -[{r['rel_type']}]-> {r['to_name']} [score: {r['score']:.3f}]")
                 
@@ -434,10 +465,10 @@ Guidelines:
                            score
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, threshold=0.45, top_k=5)
+                """, embedding=query_embedding, threshold=0.25, top_k=5)
                 paragraphs = [dict(r) for r in result]
                 
-                log(f"[4] Found {len(paragraphs)} relevant paragraphs (threshold=0.45):")
+                log(f"[4] Found {len(paragraphs)} relevant paragraphs (threshold=0.25):")
                 for p in paragraphs[:3]:
                     source_short = p['source'][:35] if p['source'] else "?"
                     log(f"    - {source_short}... chunk {p['chunk_index']} [score: {p['score']:.3f}]")
