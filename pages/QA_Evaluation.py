@@ -208,8 +208,11 @@ def get_embedding(client, text: str) -> list:
 
 # Retrieval settings
 ENTITY_TOP_K = 20
+ENTITY_THRESHOLD = 0.20
 RELATIONSHIP_TOP_K = 30
+RELATIONSHIP_THRESHOLD = 0.20
 PARAGRAPH_TOP_K = 5
+PARAGRAPH_THRESHOLD = 0.25
 
 SKIP_KEYS = {
     'rel_id', 'chunk_id', 'isLatest', 'created_at', 'updated_at',
@@ -223,13 +226,14 @@ def search_entities(session, embedding: list) -> list:
         WHERE e.embedding IS NOT NULL
         AND NOT e:Paragraph AND NOT e:Document
         WITH e, gds.similarity.cosine(e.embedding, $embedding) AS score
+        WHERE score >= $threshold
         RETURN e.name AS name, 
                labels(e)[0] AS type,
                e.entity_id AS entity_id,
                score
         ORDER BY score DESC
         LIMIT $top_k
-    """, embedding=embedding, top_k=ENTITY_TOP_K)
+    """, embedding=embedding, threshold=ENTITY_THRESHOLD, top_k=ENTITY_TOP_K)
     return [dict(r) for r in result]
 
 def search_relationships_global(session, embedding: list) -> list:
@@ -239,6 +243,7 @@ def search_relationships_global(session, embedding: list) -> list:
         AND NOT a:Paragraph AND NOT a:Document
         AND NOT b:Paragraph AND NOT b:Document
         WITH a, r, b, gds.similarity.cosine(r.embedding, $embedding) AS score
+        WHERE score >= $threshold
         RETURN a.name AS from_name,
                labels(a)[0] AS from_type,
                type(r) AS rel_type,
@@ -248,7 +253,7 @@ def search_relationships_global(session, embedding: list) -> list:
                score
         ORDER BY score DESC
         LIMIT $top_k
-    """, embedding=embedding, top_k=RELATIONSHIP_TOP_K)
+    """, embedding=embedding, threshold=RELATIONSHIP_THRESHOLD, top_k=RELATIONSHIP_TOP_K)
     return [dict(r) for r in result]
 
 def get_entity_relationships_scored(session, entity_names: list, query_embedding: list, top_k: int = 10) -> list:
@@ -281,13 +286,14 @@ def search_paragraphs(session, embedding: list) -> list:
         MATCH (p:Paragraph)
         WHERE p.embedding IS NOT NULL
         WITH p, gds.similarity.cosine(p.embedding, $embedding) AS score
+        WHERE score >= $threshold
         RETURN p.text AS text, 
                p.source_filename AS source,
                p.chunk_index AS chunk_index,
                score
         ORDER BY score DESC
         LIMIT $top_k
-    """, embedding=embedding, top_k=PARAGRAPH_TOP_K)
+    """, embedding=embedding, threshold=PARAGRAPH_THRESHOLD, top_k=PARAGRAPH_TOP_K)
     return [dict(r) for r in result]
 
 def get_entity_properties(session, entity_names: list) -> list:

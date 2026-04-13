@@ -385,32 +385,34 @@ Guidelines:
                 
                 self.update_spinner(spinner_placeholder)
                 
-                # [2] Search entities
+                # [2] Search entities (with threshold)
                 result = session.run("""
                     MATCH (e)
                     WHERE e.embedding IS NOT NULL
                     AND NOT e:Paragraph AND NOT e:Document
                     WITH e, gds.similarity.cosine(e.embedding, $embedding) AS score
+                    WHERE score >= $threshold
                     RETURN e.name AS name, labels(e)[0] AS type, score, 
                            e.entity_id AS entity_id
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, top_k=20)
+                """, embedding=query_embedding, threshold=0.20, top_k=20)
                 entities = [dict(r) for r in result]
                 
-                log(f"[2] Found {len(entities)} relevant entities:")
+                log(f"[2] Found {len(entities)} relevant entities (threshold=0.20):")
                 for e in entities[:5]:
                     log(f"    - {e['name']} ({e['type']}) [score: {e['score']:.3f}]")
                 
                 self.update_spinner(spinner_placeholder)
                 
-                # [3a] Search relationships globally - returns all props
+                # [3a] Search relationships globally (with threshold) - returns all props
                 result = session.run("""
                     MATCH (a)-[r]->(b)
                     WHERE r.embedding IS NOT NULL
                     AND NOT a:Paragraph AND NOT a:Document
                     AND NOT b:Paragraph AND NOT b:Document
                     WITH a, r, b, gds.similarity.cosine(r.embedding, $embedding) AS score
+                    WHERE score >= $threshold
                     RETURN a.name AS from_name,
                            labels(a)[0] AS from_type,
                            type(r) AS rel_type,
@@ -420,10 +422,10 @@ Guidelines:
                            score
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, top_k=30)
+                """, embedding=query_embedding, threshold=0.20, top_k=30)
                 global_relationships = [dict(r) for r in result]
                 
-                log(f"[3a] Found {len(global_relationships)} global relationships:")
+                log(f"[3a] Found {len(global_relationships)} global relationships (threshold=0.20):")
                 for r in global_relationships[:5]:
                     log(f"    - {r['from_name']} -[{r['rel_type']}]-> {r['to_name']} [score: {r['score']:.3f}]")
                 
@@ -450,21 +452,22 @@ Guidelines:
                 
                 self.update_spinner(spinner_placeholder)
                 
-                # [4] Search paragraphs
+                # [4] Search paragraphs (always, threshold filters automatically)
                 result = session.run("""
                     MATCH (p:Paragraph)
                     WHERE p.embedding IS NOT NULL
                     WITH p, gds.similarity.cosine(p.embedding, $embedding) AS score
+                    WHERE score >= $threshold
                     RETURN p.text AS text, 
                            p.source_filename AS source,
                            p.chunk_index AS chunk_index,
                            score
                     ORDER BY score DESC
                     LIMIT $top_k
-                """, embedding=query_embedding, top_k=5)
+                """, embedding=query_embedding, threshold=0.25, top_k=5)
                 paragraphs = [dict(r) for r in result]
                 
-                log(f"[4] Found {len(paragraphs)} relevant paragraphs:")
+                log(f"[4] Found {len(paragraphs)} relevant paragraphs (threshold=0.25):")
                 for p in paragraphs[:3]:
                     source_short = p['source'][:35] if p['source'] else "?"
                     log(f"    - {source_short}... chunk {p['chunk_index']} [score: {p['score']:.3f}]")
