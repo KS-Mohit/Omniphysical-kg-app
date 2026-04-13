@@ -104,6 +104,14 @@ CRITICAL RULES FOR QUESTION QUALITY:
 3. Avoid trivial or overly narrow questions — focus on meaningful facts
 4. Questions should test knowledge that would reasonably be stored in a knowledge graph
 
+CRITICAL RULES TO AVOID AMBIGUOUS QUESTIONS:
+1. Do NOT ask questions that could have multiple correct answers across different events/trips/times
+   - BAD: "Who picked up John Hilley after his flight?" (could be different people on different trips)
+   - GOOD: "Who picked up John Hilley after the 2014 Italy trip flight?"
+2. ALWAYS include the specific event, trip, year, or context in questions about actions
+3. If the text describes an event, include that event name/date in the question
+4. Avoid generic "who did X" questions — always specify WHEN or WHERE
+
 FAMILY CONTEXT (use these canonical names):
 {family_json}
 
@@ -159,14 +167,13 @@ Compare the generated answer against the expected answer and score on a 1-5 scal
 2: RELATED BUT WRONG — Touches the right topic but answer is incorrect
 1: COMPLETELY WRONG — Wrong answer or completely irrelevant
 
-Scoring guidelines:
-- Focus on factual correctness, not exact wording
+CRITICAL SCORING RULES:
+- COMPLETELY IGNORE ALL SPELLING MISTAKES — treat "Villa d'Est" and "Villa d'Este" as identical, "Ammirati" and "Amaratti" as identical, etc.
+- If the answer is factually correct but has spelling errors, score 5 NOT 4
+- Spelling errors should NEVER reduce the score under any circumstances
+- Focus ONLY on whether the core facts match, not on spelling or formatting
 - Names can vary slightly (e.g., "John Hilley" vs "John Lee Hilley") — still correct if same person
-- DO NOT penalize misspellings at all — these come from source documents, not the LLM
-- Spelling variations of the same name (e.g., "Ammirati" vs "Amaratti" vs "Ammitati") should still score 5 if the answer is otherwise correct
-- If the generated answer contains the core fact from expected answer, score 4 or 5
-- Only score 1 or 2 if the answer is actually wrong or completely misses the point
-- If misspellings exist, note them in reasoning but do not reduce the score
+- If the generated answer contains the core fact from expected answer, score 5
 
 Output JSON only:
 {
@@ -403,11 +410,25 @@ def retrieve_context(driver, client, question: str) -> str:
 # LLM CALLS (exact copy from qa_eval_agent.py)
 # ============================================================
 
-def generate_questions(client, paragraph_text: str, family_mapping: dict) -> list:
+def generate_questions(client, paragraph_text: str, family_mapping: dict, doc_name: str = "") -> list:
     system_prompt = get_question_system_prompt(family_mapping)
     
-    user_prompt = f"""Generate 1 factual quiz questions from this text:
+    doc_context = ""
+    if doc_name:
+        doc_context = f"""
+Document Filename: {doc_name}
 
+DOCUMENT NAMING HINTS (use as guidance, not hard rules):
+- Filenames may contain useful clues — person names, years, or topic keywords
+- A year likely indicates when events happened (helpful for age-based disambiguation)
+- A person's name suggests the document focuses on them
+- Topic keywords like "diary", "vacations", "career", "childhood", "wedding" etc. hint at content type
+- If no person name appears, it's probably about the narrator's own experiences
+- Use whatever is helpful from the filename to make questions specific and unambiguous
+"""
+    
+    user_prompt = f"""Generate 1 factual quiz questions from this text:
+{doc_context}
 TEXT:
 \"\"\"{paragraph_text}\"\"\"
 
@@ -415,6 +436,7 @@ Remember:
 - Use FULL CANONICAL NAMES from FAMILY CONTEXT for all family members
 - Make questions specific enough for vector search to find the right context
 - Include dates, places, or other specifics when available
+- Include the document context (trip name, event, year) in questions to make them unambiguous
 
 Return JSON only."""
 
@@ -478,7 +500,7 @@ def run_evaluation(driver, client, filename: str, num_chunks: int, progress_bar,
             continue
         
         try:
-            questions = generate_questions(client, para['text'], family_mapping)
+            questions = generate_questions(client, para['text'], family_mapping, filename)
             if not questions:
                 continue
             

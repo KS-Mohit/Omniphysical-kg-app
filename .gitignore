@@ -23,3 +23,5 @@ logs/*
 Thumbs.db
 
 tests/
+
+backup/
