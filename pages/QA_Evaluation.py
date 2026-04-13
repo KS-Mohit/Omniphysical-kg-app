@@ -454,7 +454,7 @@ Return JSON only."""
 
 def generate_answer(client, question: str, context: str) -> str:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
             {"role": "user", "content": f"CONTEXT:\n{context}\n\nQUESTION: {question}"}
@@ -472,7 +472,7 @@ GENERATED ANSWER: {generated}
 Score the generated answer on a 1-5 scale based on factual correctness compared to the expected answer."""
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": GRADER_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
